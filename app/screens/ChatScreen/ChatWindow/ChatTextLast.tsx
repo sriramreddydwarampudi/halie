@@ -13,7 +13,8 @@ type ChatTextProps = {
 }
 
 const ChatTextLast: React.FC<ChatTextProps> = ({ nowGenerating, index }) => {
-    const { markdown, rules, style } = MarkdownStyle.useCustomFormatting()
+    const isUser = Chats.useEntryData(index).is_user
+    const { markdown, rules, style } = MarkdownStyle.useCustomFormatting(isUser)
 
     const { swipeText, swipeId } = Chats.useSwipeData(index)
     const { buffer } = Chats.useBuffer()

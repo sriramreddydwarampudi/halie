@@ -4,13 +4,15 @@ import Drawer from '@components/views/Drawer'
 import HeaderButton from '@components/views/HeaderButton'
 import HeaderTitle from '@components/views/HeaderTitle'
 import SettingsDrawer from '@components/views/SettingsDrawer'
+import Avatar from '@components/views/Avatar'
 import { Characters } from '@lib/state/Characters'
 import { Chats } from '@lib/state/Chat'
+import { Theme } from '@lib/theme/ThemeManager'
 import ChatInput, { useInputHeightStore } from '@screens/ChatScreen/ChatInput'
 import ChatWindow from '@screens/ChatScreen/ChatWindow'
 import ChatsDrawer from '@screens/ChatScreen/ChatsDrawer'
 import { useEffect } from 'react'
-import { View } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useShallow } from 'zustand/react/shallow'
@@ -18,10 +20,13 @@ import { useChatEditorStore } from './ChatWindow/ChatEditor'
 
 const ChatMenu = () => {
     const insets = useSafeAreaInsets()
-    const { unloadCharacter, charId } = Characters.useCharacterStore(
+    const { color, fontSize, spacing } = Theme.useTheme()
+    const { unloadCharacter, charId, charName, charImageId } = Characters.useCharacterStore(
         useShallow((state) => ({
             unloadCharacter: state.unloadCard,
             charId: state.id,
+            charName: state.card?.name,
+            charImageId: state.card?.image_id,
         }))
     )
 
@@ -32,10 +37,9 @@ const ChatMenu = () => {
 
     const { chat, unloadChat, loadChat } = Chats.useChat()
 
-    const { showSettings, showChats } = Drawer.useDrawerStore(
+    const { showSettings } = Drawer.useDrawerStore(
         useShallow((state) => ({
             showSettings: state.values?.[Drawer.ID.SETTINGS],
-            showChats: state.values?.[Drawer.ID.CHATLIST],
         }))
     )
 
@@ -46,21 +50,9 @@ const ChatMenu = () => {
         }
     }, [])
 
-    const handleCreateChat = async () => {
-        if (charId)
-            Chats.db.mutate.createChat(charId).then((chatId) => {
-                if (chatId) loadChat(chatId)
-            })
-    }
-
     return (
         <Drawer.Gesture
             config={[
-                {
-                    drawerID: Drawer.ID.CHATLIST,
-                    openDirection: 'left',
-                    closeDirection: 'right',
-                },
                 {
                     drawerID: Drawer.ID.SETTINGS,
                     openDirection: 'right',
@@ -68,27 +60,22 @@ const ChatMenu = () => {
                 },
             ]}>
             <View style={{ flex: 1 }}>
-                <HeaderTitle />
+                <HeaderTitle 
+                    headerTitle={() => (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', columnGap: spacing.m }}>
+                            <Avatar 
+                                targetImage={Characters.getImageDir(charImageId ?? 0)}
+                                style={{ width: 32, height: 32, borderRadius: 16 }}
+                            />
+                            <Text style={{ color: color.text._100, fontSize: fontSize.l, fontWeight: 'bold' }}>
+                                {charName || 'Halie'}
+                            </Text>
+                        </View>
+                    )}
+                />
                 <HeaderButton
-                    headerLeft={() => !showChats && <Drawer.Button drawerID={Drawer.ID.SETTINGS} />}
-                    headerRight={() =>
-                        !showSettings && (
-                            <>
-                                {!showChats && (
-                                    <ThemedButton
-                                        buttonStyle={{
-                                            marginRight: 16,
-                                        }}
-                                        iconName="plus"
-                                        variant="tertiary"
-                                        iconSize={24}
-                                        onPress={handleCreateChat}
-                                    />
-                                )}
-                                <Drawer.Button drawerID={Drawer.ID.CHATLIST} openIcon="message1" />
-                            </>
-                        )
-                    }
+                    headerLeft={() => <Drawer.Button drawerID={Drawer.ID.SETTINGS} />}
+                    headerRight={() => null}
                 />
                 <KeyboardAvoidingView
                     enabled={!editorVisible}
@@ -101,7 +88,6 @@ const ChatMenu = () => {
                 </KeyboardAvoidingView>
                 {/**Drawer has to be outside of the KeyboardAvoidingView */}
                 <SettingsDrawer useInset />
-                <ChatsDrawer />
             </View>
         </Drawer.Gesture>
     )

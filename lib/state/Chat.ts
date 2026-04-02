@@ -872,6 +872,17 @@ export namespace Chats {
                     .set({ scroll_offset: scrollOffset })
                     .where(eq(chats.id, chatId))
             }
+
+            export const updateSummary = async (chatId: number, summary: string) => {
+                await database.update(chats).set({ summary: summary }).where(eq(chats.id, chatId))
+            }
+
+            export const updateUserMemory = async (chatId: number, userMemory: string) => {
+                await database
+                    .update(chats)
+                    .set({ user_memory: userMemory })
+                    .where(eq(chats.id, chatId))
+            }
         }
     }
 

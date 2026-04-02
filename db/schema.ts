@@ -102,7 +102,28 @@ export const chats = sqliteTable('chats', {
         .$onUpdateFn(() => Date.now()),
     name: text('name').notNull().default('New Chat'),
     scroll_offset: integer('scroll_offset', { mode: 'number' }).notNull().default(0),
+    summary: text('summary').notNull().default(''),
+    user_memory: text('user_memory').notNull().default(''),
 })
+
+export const diary = sqliteTable('diary', {
+    id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),
+    character_id: integer('character_id', { mode: 'number' })
+        .notNull()
+        .references(() => characters.id, { onDelete: 'cascade' }),
+    content: text('content').notNull(),
+    sentiment: text('sentiment').notNull().default('neutral'),
+    create_date: integer('create_date', { mode: 'timestamp' })
+        .notNull()
+        .$defaultFn(() => new Date()),
+})
+
+export const diaryRelations = relations(diary, ({ one }) => ({
+    character: one(characters, {
+        fields: [diary.character_id],
+        references: [characters.id],
+    }),
+}))
 
 export const chatEntries = sqliteTable('chat_entries', {
     id: integer('id', { mode: 'number' }).primaryKey({ autoIncrement: true }),

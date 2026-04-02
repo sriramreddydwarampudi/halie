@@ -48,38 +48,37 @@ const ChatBubble: React.FC<ChatTextProps> = ({
     const timings = message.swipes[message.swipe_id].timings
 
     const isWhatsApp = color.name === 'WhatsApp'
-    const bubbleBg = isWhatsApp
-        ? message.is_user
-            ? color.primary._100
-            : color.neutral._100
+    const isUser = message.is_user
+    const bubbleBg = isUser
+        ? color.primary._500
         : color.neutral._200
+    
+    const textColor = isUser ? color.text._100 : color.text._100
 
     return (
-        <View>
+        <View style={{ maxWidth: '85%' }}>
             <Pressable
                 onPress={() => {
                     setShowOptions(activeIndex === index || nowGenerating ? undefined : index)
                 }}
                 style={{
                     backgroundColor: bubbleBg,
-                    borderColor: isWhatsApp ? bubbleBg : color.neutral._200,
-                    borderWidth: 1,
                     paddingVertical: spacing.sm,
                     paddingHorizontal: spacing.m,
                     minHeight: 40,
-                    borderRadius: borderRadius.m,
-                    shadowColor: isWhatsApp ? 'transparent' : color.shadow,
-                    boxShadow: isWhatsApp
-                        ? []
-                        : [
-                              {
-                                  offsetX: 1,
-                                  offsetY: 1,
-                                  spreadDistance: 2,
-                                  color: color.shadow,
-                                  blurRadius: 4,
-                              },
-                          ],
+                    borderRadius: borderRadius.l,
+                    borderBottomLeftRadius: isUser ? borderRadius.l : 0,
+                    borderBottomRightRadius: isUser ? 0 : borderRadius.l,
+                    shadowColor: color.shadow,
+                    boxShadow: [
+                        {
+                            offsetX: 1,
+                            offsetY: 1,
+                            spreadDistance: 1,
+                            color: color.shadow,
+                            blurRadius: 2,
+                        },
+                    ],
                 }}
                 onLongPress={handleEnableEdit}>
                 {isLastMessage ? (
@@ -95,7 +94,7 @@ const ChatBubble: React.FC<ChatTextProps> = ({
                     {showTPS && appMode === 'local' && timings && (
                         <Text
                             style={{
-                                color: color.text._500,
+                                color: isUser ? color.text._200 : color.text._500,
                                 fontWeight: '300',
                                 textAlign: 'right',
                                 fontSize: fontSize.s,

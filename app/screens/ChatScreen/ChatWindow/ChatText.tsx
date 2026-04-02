@@ -12,7 +12,8 @@ type ChatTextProps = {
 }
 
 const ChatText: React.FC<ChatTextProps> = ({ nowGenerating, index }) => {
-    const { markdown, rules, style } = MarkdownStyle.useCustomFormatting()
+    const isUser = Chats.useEntryData(index).is_user
+    const { markdown, rules, style } = MarkdownStyle.useCustomFormatting(isUser)
     const [showHidden, setShowHidden] = useState(false)
     const { swipeText } = Chats.useSwipeData(index)
     const viewRef = useRef<View>(null)

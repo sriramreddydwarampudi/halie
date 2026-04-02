@@ -2,6 +2,7 @@ const IS_DEV = process.env.APP_VARIANT === 'development'
 
 module.exports = {
     expo: {
+        owner: 'sriram240',
         name: IS_DEV ? 'Halie (DEV)' : 'Halie',
         newArchEnabled: true,
         slug: 'halie',
@@ -108,7 +109,7 @@ module.exports = {
                 origin: false,
             },
             eas: {
-                projectId: 'e8792177-ed92-475b-b484-a09d54c09b70',
+                projectId: '150c5496-f0cd-4d64-ae35-11c81bb50591',
             },
         },
     },

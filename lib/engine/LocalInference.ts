@@ -7,8 +7,9 @@ import { Logger } from '@lib/state/Logger'
 import { SamplersManager } from '@lib/state/SamplerState'
 import { useTTSStore } from '@lib/state/TTS'
 import { mmkv } from '@lib/storage/MMKV'
-import { CompletionTimings } from 'db/schema'
-
+import { CompletionTimings, diary } from 'db/schema'
+import { db } from '@db'
+import { eq, desc } from 'drizzle-orm'
 import { Characters } from '@lib/state/Characters'
 import { APIConfiguration, APISampler, APIValues } from './API/APIBuilder.types'
 import {
@@ -292,11 +293,29 @@ const runLocalCompletion = async (
         useTTSStore.getState().insertBuffer(text)
     }
 
-    const outputCompleted = (text: string, timings: CompletionTimings) => {
+    const outputCompleted = async (text: string, timings: CompletionTimings) => {
         const regenCache = Chats.useChatState.getState().getRegenCache()
-        Chats.useChatState
-            .getState()
-            .setBuffer({ data: (regenCache + text).replaceAll(replace, ''), timings: timings })
+        const fullText = regenCache + text
+        const cleanText = fullText.replaceAll(replace, '')
+
+        // Extract <think> tags for the diary
+        const thinkMatch = fullText.match(/<think>([\s\S]*?)<\/think>/)
+        if (thinkMatch && thinkMatch[1]) {
+            const thought = thinkMatch[1].trim()
+            const charId = Characters.useCharacterStore.getState().id
+            if (thought && charId) {
+                db.insert(diary)
+                    .values({
+                        character_id: charId,
+                        content: thought,
+                        sentiment: 'neutral', // placeholder for future sentiment analysis
+                    })
+                    .execute()
+                    .catch((e) => Logger.error('Failed to save to diary: ' + e))
+            }
+        }
+
+        Chats.useChatState.getState().setBuffer({ data: cleanText, timings: timings })
         if (mmkv.getBoolean(AppSettings.PrintContext)) Logger.info(`Completion Output:\n${text}`)
         stopGenerating()
     }
@@ -424,6 +443,22 @@ const obtainFields = async (): Promise<ContextBuilderParams | void> => {
         const instructLength = engineData.context_length
         const length = Math.max(instructLength - samplers.genamt, 0)
 
+        // Fetch last 3 diary entries for context
+        const diaryEntries = characterCard
+            ? await db.query.diary.findMany({
+                  where: eq(diary.character_id, characterCard.id),
+                  orderBy: desc(diary.create_date),
+                  limit: 3,
+              })
+            : []
+        const diaryContext = diaryEntries
+            .reverse()
+            .map((item) => item.content)
+            .join('\n---\n')
+
+        const chatSummary = chatState.data?.summary ?? ''
+        const userMemory = chatState.data?.user_memory ?? ''
+
         return {
             apiConfig: Object.assign({}, apiConfig),
             apiValues: Object.assign({}, apiValues),
@@ -439,6 +474,9 @@ const obtainFields = async (): Promise<ContextBuilderParams | void> => {
             },
             tokenizer: Llama.useLlamaModelStore.getState().tokenLength,
             maxLength: length,
+            diary: diaryContext,
+            summary: chatSummary,
+            userMemory: userMemory,
             cache: {
                 userCache: await characterState.getCache(characterCard.name),
                 characterCache: await userState.getCache(userCard.name),

@@ -7,11 +7,14 @@ import {
     LlamaContext,
     RNLLAMA_MTMD_DEFAULT_MEDIA_MARKER,
 } from 'cui-llama.rn'
-import { ModelDataType } from 'db/schema'
+import { ModelDataType, CompletionTimings, model_data, model_mmproj_links } from 'db/schema'
 import { getInfoAsync, writeAsStringAsync } from 'expo-file-system'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { db } from '@db'
+import { eq } from 'drizzle-orm'
 
+import { Chats } from '../../state/Chat'
 import { AppSettings } from '../../constants/GlobalValues'
 import { Logger } from '../../state/Logger'
 import { createMMKVStorage, mmkv } from '../../storage/MMKV'
@@ -188,6 +191,19 @@ export namespace Llama {
             // updated EngineData
             useLlamaPreferencesStore.getState().setLastModelLoaded(model)
             KV.useKVStore.getState().setKvCacheLoaded(false)
+
+            // Auto-load linked mmproj if available
+            const mmprojLink = await db.query.model_mmproj_links.findFirst({
+                where: eq(model_mmproj_links.model_id, model.id),
+            })
+            if (mmprojLink) {
+                const mmprojData = await db.query.model_data.findFirst({
+                    where: eq(model_data.id, mmprojLink.mmproj_id),
+                })
+                if (mmprojData) {
+                    await get().loadMmproj(mmprojData)
+                }
+            }
         },
         loadMmproj: async (model: ModelDataType) => {
             const context = get().context
@@ -256,6 +272,68 @@ export namespace Llama {
                     set({ chatCount: get().chatCount + 1 })
                     if (mmkv.getBoolean(AppSettings.SaveLocalKV)) {
                         await get().saveKV(params.prompt, params.media_paths ?? [])
+                    }
+
+                    // Automatic Summarization
+                    const chatCount = get().chatCount
+                    if (chatCount > 0 && chatCount % 10 === 0) {
+                        Logger.info('Triggering chat summarization...')
+                        const chatState = Chats.useChatState.getState()
+                        const messages = chatState.data?.messages
+                        const chatId = chatState.data?.id
+                        if (messages && messages.length > 5 && chatId) {
+                            const lastMessages = messages
+                                .slice(-10)
+                                .map((m) => `${m.name}: ${m.swipes[m.swipe_id].swipe}`)
+                                .join('\n')
+                            const summaryPrompt = `Summarize the following chat conversation concisely in one or two sentences, focusing on the main topics and character emotional state:\n\n${lastMessages}\n\nSummary:`
+
+                            const summaryParams = {
+                                ...params,
+                                prompt: summaryPrompt,
+                                n_predict: 100,
+                                emit_partial_completion: false,
+                            }
+
+                            get().context?.completion(summaryParams, () => {}).then(async (result) => {
+                                if (result.text) {
+                                    Logger.info('Chat summarized successfully')
+                                    await Chats.db.mutate.updateSummary(chatId, result.text.trim())
+                                }
+                            })
+                        }
+                    }
+
+                    // User Memory Update
+                    if (chatCount > 0 && (chatCount + 5) % 10 === 0) {
+                        Logger.info('Updating Halie\'s memory of the user...')
+                        const chatState = Chats.useChatState.getState()
+                        const messages = chatState.data?.messages
+                        const chatId = chatState.data?.id
+                        const currentMemory = chatState.data?.user_memory ?? ''
+
+                        if (messages && messages.length > 5 && chatId) {
+                            const lastMessages = messages
+                                .slice(-10)
+                                .map((m) => `${m.name}: ${m.swipes[m.swipe_id].swipe}`)
+                                .join('\n')
+
+                            const memoryPrompt = `Below is Halie's current memory of the user, followed by a recent conversation snippet. Update the memory to include any new important information about the user (preferences, personal details, emotional state, shared experiences) while keeping it concise and structured.\n\n### Current Memory:\n${currentMemory || 'No previous memory.'}\n\n### Recent Conversation:\n${lastMessages}\n\n### Updated Memory:`
+
+                            const memoryParams = {
+                                ...params,
+                                prompt: memoryPrompt,
+                                n_predict: 200,
+                                emit_partial_completion: false,
+                            }
+
+                            get().context?.completion(memoryParams, () => {}).then(async (result) => {
+                                if (result.text) {
+                                    Logger.info('User memory updated successfully')
+                                    await Chats.db.mutate.updateUserMemory(chatId, result.text.trim())
+                                }
+                            })
+                        }
                     }
                 })
         },

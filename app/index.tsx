@@ -83,7 +83,13 @@ const Home = () => {
                 </TouchableOpacity>
             </View>
         )
-    if (!firstRender && success) return <CharacterList />
+    if (!firstRender && success)
+        return (
+            <View style={styles.centeredContainer}>
+                <HeaderTitle />
+                <Text style={styles.title}>Loading Halie...</Text>
+            </View>
+        )
     return <HeaderTitle />
 }
 

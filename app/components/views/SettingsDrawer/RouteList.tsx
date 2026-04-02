@@ -76,6 +76,16 @@ const useStyles = () => {
 
 const getPaths = (remote: boolean): ButtonData[] => [
     {
+        name: 'Memory',
+        path: '/screens/UserMemoryScreen',
+        icon: 'contacts',
+    },
+    {
+        name: 'Diary',
+        path: '/screens/DiaryScreen',
+        icon: 'book',
+    },
+    {
         name: 'Sampler',
         path: '/screens/SamplerManagerScreen',
         icon: 'barschart',

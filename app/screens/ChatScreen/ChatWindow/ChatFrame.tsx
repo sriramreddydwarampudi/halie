@@ -17,8 +17,6 @@ type ChatFrameProps = {
 
 const ChatFrame: React.FC<ChatFrameProps> = ({ children, index, nowGenerating, isLast }) => {
     const { color, spacing, borderRadius, fontSize } = Theme.useTheme()
-    const [wide, _] = useMMKVBoolean(AppSettings.WideChatMode)
-    const [alternate, __] = useMMKVBoolean(AppSettings.AlternatingChatMode)
     const message = Chats.useEntryData(index)
     const setShowViewer = useAvatarViewerStore((state) => state.setShow)
     const charImageId = Characters.useCharacterStore((state) => state.card?.image_id) ?? 0
@@ -37,104 +35,59 @@ const ChatFrame: React.FC<ChatFrameProps> = ({ children, index, nowGenerating, i
         )
     const deltaTime = getDeltaTime()
 
-    const rowDir = message.is_user && alternate ? 'row-reverse' : 'row'
-    const align = message.is_user && alternate ? 'flex-end' : 'flex-start'
-    if (wide)
-        return (
-            <View style={{ flex: 1, paddingHorizontal: 8 }}>
-                <View
-                    style={{
-                        flexDirection: rowDir,
-                        alignItems: 'center',
-                        marginBottom: spacing.l,
-                    }}>
-                    <TouchableOpacity onPress={() => setShowViewer(true, message.is_user)}>
-                        <Avatar
-                            style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: borderRadius.xl,
-                                marginRight: message.is_user && alternate ? 0 : spacing.l,
-                                marginLeft: message.is_user && alternate ? spacing.l : 0,
-                            }}
-                            targetImage={Characters.getImageDir(
-                                message.is_user ? userImageId : charImageId
-                            )}
-                        />
-                    </TouchableOpacity>
-                    <View style={{ alignItems: align }}>
-                        <Text
-                            style={{
-                                fontSize: fontSize.l,
-                                color: color.text._100,
-                            }}>
-                            {message.name}
-                        </Text>
-                        <View style={{ columnGap: 12, flexDirection: rowDir }}>
-                            <Text style={{ fontSize: fontSize.s, color: color.text._400 }}>
-                                {swipe.gen_finished.toLocaleTimeString()}
-                            </Text>
-                            <Text style={{ color: color.text._700, fontSize: fontSize.s }}>
-                                #{index}
-                            </Text>
-                            {deltaTime !== undefined && !message.is_user && index !== 0 && (
-                                <Text style={{ color: color.text._700, fontSize: fontSize.s }}>
-                                    {deltaTime}s
-                                </Text>
-                            )}
-                        </View>
-                    </View>
-                </View>
-                {children}
-            </View>
-        )
+    const isUser = message.is_user
+    const rowDir = isUser ? 'row-reverse' : 'row'
+    const align = isUser ? 'flex-end' : 'flex-start'
 
     return (
-        <View style={{ flexDirection: rowDir }}>
-            <View
-                style={{
-                    alignItems: 'center',
+        <View style={{ flex: 1, flexDirection: rowDir, alignItems: 'flex-end', paddingHorizontal: 4 }}>
+            {!isUser && (
+                <TouchableOpacity onPress={() => setShowViewer(true, false)}>
+                    <Avatar
+                        style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            marginRight: spacing.m,
+                            marginBottom: spacing.xs,
+                        }}
+                        targetImage={Characters.getImageDir(charImageId)}
+                    />
+                </TouchableOpacity>
+            )}
+            <View style={{ flex: 1, alignItems: align }}>
+                {children}
+                <View style={{ 
+                    flexDirection: rowDir, 
+                    columnGap: 8, 
+                    marginTop: 4, 
+                    marginHorizontal: spacing.m,
+                    opacity: 0.6
                 }}>
-                <View style={{ rowGap: spacing.m, alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => setShowViewer(true, message.is_user)}>
-                        <Avatar
-                            style={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: borderRadius.xl,
-                                marginLeft: spacing.sm,
-                                marginRight: spacing.m,
-                            }}
-                            targetImage={Characters.getImageDir(
-                                message.is_user ? userImageId : charImageId
-                            )}
-                        />
-                    </TouchableOpacity>
-
-                    <Text style={{ color: color.text._400 }}>#{index}</Text>
-                    {deltaTime !== undefined && !message.is_user && index !== 0 && (
-                        <Text style={{ color: color.text._400 }}>{deltaTime}s</Text>
+                    <Text style={{ fontSize: fontSize.xs, color: color.text._500 }}>
+                        {swipe.gen_finished.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                    {!isUser && index !== 0 && (
+                        <Text style={{ fontSize: fontSize.xs, color: color.text._700 }}>
+                            {deltaTime}s
+                        </Text>
                     )}
                 </View>
             </View>
-            <View style={{ flex: 1 }}>
-                <View style={{ flex: 1 }}>
-                    <View style={{ marginBottom: spacing.m, alignItems: align }}>
-                        <Text
-                            style={{
-                                fontSize: fontSize.l,
-                                color: color.text._100,
-                                marginRight: spacing.sm,
-                            }}>
-                            {message.name}
-                        </Text>
-                        <Text style={{ fontSize: fontSize.s, color: color.text._400 }}>
-                            {swipe.gen_finished.toLocaleTimeString()}
-                        </Text>
-                    </View>
-                </View>
-                {children}
-            </View>
+            {isUser && (
+                <TouchableOpacity onPress={() => setShowViewer(true, true)}>
+                    <Avatar
+                        style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 18,
+                            marginLeft: spacing.m,
+                            marginBottom: spacing.xs,
+                        }}
+                        targetImage={Characters.getImageDir(userImageId)}
+                    />
+                </TouchableOpacity>
+            )}
         </View>
     )
 }

@@ -31,11 +31,16 @@ import { patchAndroidText } from './PatchText'
 import { lockScreenOrientation } from './Screen'
 
 export const loadChatOnInit = async () => {
-    if (!mmkv.getBoolean(AppSettings.ChatOnStartup)) return
-    const newestChat = await Chats.db.query.chatNewest()
-    if (!newestChat) return
-    await Characters.useCharacterStore.getState().setCard(newestChat.character_id)
-    await Chats.useChatState.getState().load(newestChat.id)
+    // Force always load Halie character and her latest chat
+    const result = await Characters.db.query.cardList('character')
+    const halie = result.find((item) => item.name === 'Halie')
+    if (!halie) return
+
+    const halieChatId = await Chats.db.query.chatNewestId(halie.id)
+    if (!halieChatId) return
+
+    await Characters.useCharacterStore.getState().setCard(halie.id)
+    await Chats.useChatState.getState().load(halieChatId)
     router.push('/screens/ChatScreen')
 }
 
@@ -52,10 +57,35 @@ const setAppDefaultSettings = () => {
 }
 
 const createDefaultCard = async () => {
-    if (!mmkv.getBoolean(AppSettings.CreateDefaultCard)) return
+    // Only one character: Halie
     const result = await Characters.db.query.cardList('character')
-    if (result.length === 0) await Characters.createDefaultCard()
+    let charId: number | undefined
+    const halie = result.find((item) => item.name === 'Halie')
+
+    if (!halie) {
+        charId = await Characters.db.mutate.createCard('Halie', 'character')
+        Logger.info('Created Halie character')
+    } else {
+        charId = halie.id
+    }
+
+    // Ensure only one chat exists for Halie
+    const chatResult = await Chats.db.query.chatList(charId)
+    if (chatResult.length === 0) {
+        const chatId = await Chats.db.mutate.createChat(charId)
+        if (chatId) await Chats.db.mutate.updateChatField('name', 'Halie', chatId)
+        Logger.info('Created Halie chat')
+    }
+
+    // Load Halie character and chat
+    await Characters.useCharacterStore.getState().setCard(charId)
+    const newestChat = await Chats.db.query.chatNewest()
+    if (newestChat) {
+        await Chats.useChatState.getState().load(newestChat.id)
+    }
+
     mmkv.set(AppSettings.CreateDefaultCard, false)
+    mmkv.set(AppSettings.ChatOnStartup, true)
 }
 
 const setCPUFeatures = async () => {

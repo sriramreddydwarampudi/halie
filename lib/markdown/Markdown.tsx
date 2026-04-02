@@ -99,8 +99,8 @@ export namespace MarkdownStyle {
         },
     }
 
-    export const useCustomFormatting = () => {
-        const mdStyle = useMarkdownStyle()
+    export const useCustomFormatting = (isUser?: boolean) => {
+        const mdStyle = useMarkdownStyle(isUser)
 
         const { markdown, rules, style } = useMemo(
             () => ({
@@ -108,62 +108,67 @@ export namespace MarkdownStyle {
                 rules: RenderRules,
                 style: mdStyle,
             }),
-            [Rules, RenderRules]
+            [Rules, RenderRules, mdStyle]
         )
         return { markdown, rules, style }
     }
 
-    export const useMarkdownStyle = () => {
+    export const useMarkdownStyle = (isUser?: boolean) => {
         const { color, spacing, borderRadius } = Theme.useTheme()
+
+        const textColor = isUser ? '#FFFFFF' : color.text._100
+        const secondaryTextColor = isUser ? 'rgba(255, 255, 255, 0.7)' : color.text._400
 
         return useMemo(
             () =>
                 StyleSheet.create({
-                    double_quote: { color: color.quote },
+                    double_quote: { color: isUser ? '#FFFFFF' : color.quote },
                     // The main container
-                    body: {},
+                    body: {
+                        color: textColor,
+                    },
 
                     // Headings
                     heading1: {
                         flexDirection: 'row',
                         fontSize: 32,
-                        color: color.text._100,
+                        color: textColor,
                         fontWeight: '500',
                     },
                     heading2: {
                         flexDirection: 'row',
                         fontSize: 24,
-                        color: color.text._100,
+                        color: textColor,
                         fontWeight: '500',
                     },
                     heading3: {
                         flexDirection: 'row',
                         fontSize: 18,
-                        color: color.text._100,
+                        color: textColor,
                         fontWeight: '500',
                     },
                     heading4: {
                         flexDirection: 'row',
                         fontSize: 16,
-                        color: color.text._100,
+                        color: textColor,
                         fontWeight: '500',
                     },
                     heading5: {
                         flexDirection: 'row',
                         fontSize: 13,
-                        color: color.text._100,
+                        color: textColor,
                         fontWeight: '500',
                     },
                     heading6: {
                         flexDirection: 'row',
                         fontSize: 11,
-                        color: color.text._100,
+                        color: textColor,
                         fontWeight: '500',
                     },
 
                     // Horizontal Rule
                     hr: {
-                        backgroundColor: color.primary._500,
+                        backgroundColor: isUser ? '#FFFFFF' : color.primary._500,
                         height: 1,
                         marginTop: spacing.m,
                     },
@@ -171,25 +176,25 @@ export namespace MarkdownStyle {
                     // Emphasis
                     strong: {
                         fontWeight: 'bold',
-                        color: color.text._100,
+                        color: textColor,
                     },
                     em: {
                         fontStyle: 'italic',
-                        color: color.text._400,
+                        color: secondaryTextColor,
                     },
                     s: {
                         textDecorationLine: 'line-through',
-                        color: color.text._400,
+                        color: secondaryTextColor,
                     },
 
                     // Blockquotes
                     blockquote: {
-                        backgroundColor: color.neutral._200,
-                        borderColor: color.primary._500,
+                        backgroundColor: isUser ? 'rgba(255, 255, 255, 0.1)' : color.neutral._200,
+                        borderColor: isUser ? '#FFFFFF' : color.primary._500,
                         borderLeftWidth: 4,
                         marginLeft: spacing.sm,
                         paddingHorizontal: spacing.sm,
-                        color: color.text._400,
+                        color: secondaryTextColor,
                     },
 
                     // Lists
@@ -202,35 +207,38 @@ export namespace MarkdownStyle {
                     list_item: {
                         flexDirection: 'row',
                         justifyContent: 'flex-start',
-                        color: color.text._100,
+                        color: textColor,
                     },
                     // @pseudo class, does not have a unique render rule
                     bullet_list_icon: {
-                        color: color.text._400,
+                        color: secondaryTextColor,
                         marginLeft: spacing.m,
                         marginRight: spacing.m,
                     },
                     // @pseudo class, does not have a unique render rule
                     bullet_list_content: {
                         flex: 1,
+                        color: textColor,
                     },
                     // @pseudo class, does not have a unique render rule
                     ordered_list_icon: {
-                        color: color.text._400,
+                        color: secondaryTextColor,
                         marginLeft: spacing.m,
                         marginRight: spacing.m,
                     },
                     // @pseudo class, does not have a unique render rule
                     ordered_list_content: {
                         flex: 1,
+                        color: textColor,
                     },
 
                     // Code
                     code_inline: {
-                        backgroundColor: color.neutral._200,
+                        backgroundColor: isUser ? 'rgba(255, 255, 255, 0.2)' : color.neutral._200,
                         paddingHorizontal: spacing.m,
                         flex: 1,
                         borderRadius: 4,
+                        color: textColor,
                         ...Platform.select({
                             ios: {
                                 fontFamily: 'Courier',
@@ -241,10 +249,10 @@ export namespace MarkdownStyle {
                         }),
                     },
                     code_block: {
-                        color: color.text._400,
+                        color: secondaryTextColor,
                         borderWidth: 1,
-                        borderColor: color.neutral._100,
-                        backgroundColor: color.neutral._200,
+                        borderColor: isUser ? 'rgba(255, 255, 255, 0.3)' : color.neutral._100,
+                        backgroundColor: isUser ? 'rgba(255, 255, 255, 0.1)' : color.neutral._200,
                         padding: 4,
                         borderRadius: 8,
                         ...Platform.select({
@@ -257,8 +265,8 @@ export namespace MarkdownStyle {
                         }),
                     },
                     fence: {
-                        color: color.text._300,
-                        backgroundColor: color.neutral._400,
+                        color: isUser ? '#FFFFFF' : color.text._300,
+                        backgroundColor: isUser ? 'rgba(0,0,0,0.3)' : color.neutral._400,
                         paddingLeft: spacing.l,
                         paddingRight: spacing.l,
                         paddingVertical: spacing.m,
@@ -276,13 +284,13 @@ export namespace MarkdownStyle {
                     },
 
                     fenceHeader: {
-                        color: color.text._300,
+                        color: isUser ? '#FFFFFF' : color.text._300,
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         paddingVertical: 4,
                         paddingHorizontal: 12,
-                        backgroundColor: color.neutral._300,
+                        backgroundColor: isUser ? 'rgba(0,0,0,0.5)' : color.neutral._300,
                         borderTopLeftRadius: borderRadius.m,
                         borderTopRightRadius: borderRadius.m,
                         marginTop: spacing.sm,
@@ -291,34 +299,37 @@ export namespace MarkdownStyle {
                     // Tables
                     table: {
                         borderWidth: 1,
-                        borderColor: color.primary._200,
+                        borderColor: isUser ? 'rgba(255, 255, 255, 0.3)' : color.primary._200,
                         borderRadius: borderRadius.m,
                         marginBottom: spacing.m,
                         overflow: 'hidden',
                     },
                     thead: {
-                        backgroundColor: color.neutral._100,
+                        backgroundColor: isUser ? 'rgba(255, 255, 255, 0.1)' : color.neutral._100,
                     },
                     tbody: {
-                        backgroundColor: color.neutral._200,
+                        backgroundColor: isUser ? 'rgba(255, 255, 255, 0.05)' : color.neutral._200,
                     },
                     th: {
                         flex: 1,
                         padding: 8,
+                        color: textColor,
                     },
                     tr: {
                         borderBottomWidth: 1,
-                        borderColor: color.neutral._300,
+                        borderColor: isUser ? 'rgba(255, 255, 255, 0.2)' : color.neutral._300,
                         flexDirection: 'row',
                     },
                     td: {
                         flex: 1,
                         padding: 8,
+                        color: textColor,
                     },
 
                     // Links
                     link: {
                         textDecorationLine: 'underline',
+                        color: isUser ? '#FFFFFF' : color.primary._500,
                     },
                     blocklink: {
                         flex: 1,
@@ -332,15 +343,17 @@ export namespace MarkdownStyle {
                     },
 
                     // Text Output
-                    text: {},
+                    text: {
+                        color: textColor,
+                    },
                     textgroup: {
-                        color: color.text._100,
+                        color: textColor,
                     },
                     latex_inline: {
-                        color: color.text._300,
+                        color: isUser ? '#FFFFFF' : color.text._300,
                     },
                     latex_block: {
-                        color: color.text._300,
+                        color: isUser ? '#FFFFFF' : color.text._300,
                         marginTop: spacing.l,
                         marginBottom: spacing.sm,
                     },
@@ -350,14 +363,14 @@ export namespace MarkdownStyle {
                         alignItems: 'flex-start',
                         justifyContent: 'flex-start',
                         width: '100%',
-                        color: color.text._100,
+                        color: textColor,
                         marginVertical: spacing.sm,
                     },
 
                     hardbreak: {
                         width: '100%',
                         height: 1,
-                        color: color.text._100,
+                        color: textColor,
                     },
                     softbreak: {},
 
@@ -366,7 +379,7 @@ export namespace MarkdownStyle {
                     inline: {},
                     span: {},
                 }),
-            [color, spacing, borderRadius]
+            [color, spacing, borderRadius, isUser, textColor, secondaryTextColor]
         )
     }
 }

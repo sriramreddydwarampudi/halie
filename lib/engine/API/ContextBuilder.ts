@@ -33,6 +33,9 @@ export interface ContextBuilderParams {
     chatTokenizer: (entry: ChatEntry, index: number) => Promise<number>
     maxLength: number
     cache: TokenCache
+    diary?: string
+    summary?: string
+    userMemory?: string
     bypassContextLength?: boolean
     messageLoader?: MessageLoader
 }
@@ -69,6 +72,9 @@ export const buildChatCompletionContext = async ({
     tokenizer,
     chatTokenizer,
     maxLength,
+    diary,
+    summary,
+    userMemory,
     bypassContextLength,
     messageLoader,
 }: ContextBuilderParams) => {
@@ -81,6 +87,9 @@ export const buildChatCompletionContext = async ({
         instruct,
         user,
         character,
+        diary,
+        summary,
+        userMemory,
         userCache,
         characterCache,
         instructCache,
@@ -204,21 +213,28 @@ export const buildTextCompletionContext = async ({
     tokenizer,
     chatTokenizer,
     maxLength,
+    diary,
+    summary,
+    userMemory,
     bypassContextLength,
     messageLoader,
-}: ContextBuilderParams) => {
+    }: ContextBuilderParams) => {
     const delta = performance.now()
-
     const { characterCache, userCache, instructCache } = cache
 
     const { systemPrompt, systemPromptLength } = getSystemPrompt({
         instruct,
         user,
         character,
+        diary,
+        summary,
+        userMemory,
         userCache,
         characterCache,
         instructCache,
-        useSuffix: false,
+        usePrefix: true,
+    })
+
     })
 
     let payload = systemPrompt
@@ -386,6 +402,9 @@ export const getSystemPrompt = ({
     instruct,
     user,
     character,
+    diary,
+    summary,
+    userMemory,
     userCache,
     characterCache,
     instructCache,
@@ -395,6 +414,9 @@ export const getSystemPrompt = ({
     instruct: InstructType
     user?: CharacterCardData
     character?: CharacterCardData
+    diary?: string
+    summary?: string
+    userMemory?: string
     userCache: CharacterTokenCache
     characterCache: CharacterTokenCache
     instructCache: InstructTokenCache
@@ -446,6 +468,21 @@ export const getSystemPrompt = ({
             macro: '{{scenario}}',
             value: (instruct.scenario && character?.scenario) || '',
             length: instruct.scenario ? characterCache.scenario_length : 0,
+        },
+        {
+            macro: '{{diary}}',
+            value: diary ? `\n\nHalie's Private Thoughts:\n${diary}` : '',
+            length: 0, // dynamic, but small usually
+        },
+        {
+            macro: '{{summary}}',
+            value: summary ? `\n\nRecent History Summary:\n${summary}` : '',
+            length: 0,
+        },
+        {
+            macro: '{{user_memory}}',
+            value: userMemory ? `\n\nWhat Halie knows about the user:\n${userMemory}` : '',
+            length: 0,
         },
     ]
     macros.forEach((m) => {
