@@ -62,6 +62,12 @@ module.exports = {
                         extraProguardRules: '-keep class com.rnllama.** { *; }',
                         ndkVersion: '27.2.12479018',
                         minSdkVersion: 24,
+                        gradleProperties: {
+                            'org.gradle.jvmargs': '-Xmx1024m -XX:MaxMetaspaceSize=512m',
+                            'org.gradle.daemon': 'false',
+                            'org.gradle.parallel': 'false',
+                            'android.enableAapt2': 'true',
+                        },
                     },
                 },
             ],

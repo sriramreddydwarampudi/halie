@@ -1,0 +1,43 @@
+image: node:18
+
+stages:
+  - build
+
+variables:
+  ANDROID_COMPILE_SDK: "34"
+  ANDROID_BUILD_TOOLS: "34.0.0"
+  ANDROID_SDK_ROOT: "$CI_PROJECT_DIR/android-sdk"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.jvmargs='-Xmx1024m -XX:MaxMetaspaceSize=512m'"
+
+before_script:
+  - apt-get update -y
+  - apt-get install -y openjdk-17-jdk wget unzip git
+
+  # Setup Android SDK
+  - mkdir -p $ANDROID_SDK_ROOT
+  - cd $ANDROID_SDK_ROOT
+  - wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+  - unzip commandlinetools-linux-*.zip
+  - mv cmdline-tools latest
+  - mkdir cmdline-tools
+  - mv latest cmdline-tools/
+
+  - export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+  - export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
+
+  - yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses
+  - sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+  - cd $CI_PROJECT_DIR
+
+build_apk:
+  stage: build
+  script:
+    - npm install
+    - npx expo prebuild --platform android --no-install
+    - cd android
+    - chmod +x gradlew
+    - ./gradlew assembleDebug --max-workers=1 --no-daemon
+  artifacts:
+    paths:
+      - android/app/build/outputs/apk/debug/app-debug.apk
